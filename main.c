@@ -167,19 +167,9 @@ int main(int argc, char const *argv[])
             rect.w = iTexPlanet_w;
             rect.h = iTexPlanet_h;
 
-            SDL_Rect rectBG;
-            rectBG.x = xBG;
-            rectBG.y = 0;
-            rectBG.w = iTexBG_w;
-            rectBG.h = iTexBG_h;
-            // Affichage background BG1 et BG2
+            SDL_Rect rectBG = {xBG, 0, iTexBG_w, iTexBG_h};
             SDL_RenderCopy(renderer, texBG, NULL, &rectBG);
-
-            SDL_Rect rectBG2;
-            rectBG.x = xBG + iTexBG_w;
-            rectBG.y = 0;
-            rectBG.w = iTexBG_w;
-            rectBG.h = iTexBG_h;
+            SDL_Rect rectBG2 = {xBG + iTexBG_w, 0, iTexBG_w, iTexBG_h};
             SDL_RenderCopy(renderer, texBG, NULL, &rectBG2);
 
             // Affichage image
