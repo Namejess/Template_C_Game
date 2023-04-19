@@ -161,11 +161,6 @@ int main(int argc, char const *argv[])
             SDL_RenderClear(renderer);
 
             // Draw a rectangle white
-            SDL_Rect rect;
-            rect.x = x;
-            rect.y = y;
-            rect.w = iTexPlanet_w;
-            rect.h = iTexPlanet_h;
 
             SDL_Rect rectBG = {xBG, 0, iTexBG_w, iTexBG_h};
             SDL_RenderCopy(renderer, texBG, NULL, &rectBG);
@@ -173,6 +168,7 @@ int main(int argc, char const *argv[])
             SDL_RenderCopy(renderer, texBG, NULL, &rectBG2);
 
             // Affichage image
+            SDL_Rect rect = {x, y, iTexPlanet_w, iTexPlanet_h};
             SDL_RenderCopy(renderer, texPlanet, NULL, &rect);
 
             // Draw the screen
