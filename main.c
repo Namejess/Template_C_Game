@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "SDL2/SDL_image.h"
+#include "src/shoot.c"
 
 typedef float f32;
 typedef double f64;
@@ -24,6 +25,8 @@ typedef ssize_t isize;
 #define kGameName "SDL2 Game"
 #define kGameWidth 1000
 #define kGameHeight 600
+
+static Shoot shoot;
 
 SDL_Texture *LoadTexture(SDL_Renderer *renderer, char *path)
 {
@@ -145,10 +148,18 @@ int main(int argc, char const *argv[])
         int vx = 4;
         int vy = 4;
 
+        i8 xShoot = 0;
+        i8 yShoot = 0;
+        i8 vxShoot = 4;
+        i8 vyShoot = 4;
+
         int xBG = 0;
         int xBG2 = 0;
 
-        // Main Game loop
+        shoot_init(renderer);
+
+        bool isShooting = false;
+
         while (true)
         {
             // Handle events
@@ -177,7 +188,7 @@ int main(int argc, char const *argv[])
             }
 
             // Add direction to the planet ZQSD
-            const Uint8 *state = SDL_GetKeyboardState(NULL);
+            const u8 *state = SDL_GetKeyboardState(NULL);
             if (state[SDL_SCANCODE_UP])
             {
                 y -= 5;
@@ -196,6 +207,35 @@ int main(int argc, char const *argv[])
             if (state[SDL_SCANCODE_RIGHT])
             {
                 x += 5;
+            }
+
+            if (state[SDL_SCANCODE_SPACE] && num_shoots < MAX_SHOOTS)
+            {
+                // Add new shoot
+                shoots[num_shoots].x = x + iTexPlanet_w;
+                shoots[num_shoots].y = y + iTexPlanet_h / 2;
+                shoots[num_shoots].vxShoot = 4;
+                shoots[num_shoots].vyShoot = 0;
+                num_shoots++;
+            }
+
+            // Update and draw shoots
+            for (int i = 0; i < num_shoots; i++)
+            {
+                // Update position
+                shoots[i].x += shoots[i].vxShoot;
+                shoots[i].y += shoots[i].vyShoot;
+
+                // Draw shoot
+                shoot_dstRect.x = shoots[i].x;
+                shoot_dstRect.y = shoots[i].y;
+                SDL_RenderCopy(renderer, shoot_texture, &shoot_srcRect, &shoot_dstRect);
+            }
+
+            // Draw
+            if (state[SDL_SCANCODE_SPACE])
+            {
+                shoot_launch(xShoot, yShoot, vxShoot);
             }
 
             // Clear the screen
