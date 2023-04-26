@@ -4,6 +4,12 @@
 #include <SDL2/SDL.h>
 #define kGameWidth 1000
 #define kGameHeight 600
+#define MAX_SHOOTS 10
+static SDL_Texture *shoot_texture;
+static SDL_Rect shoot_srcRect;
+static SDL_Rect shoot_dstRect;
+static int vxShoot = 10;
+static int num_shoots = 0;
 
 // Structure pour le shoot
 typedef struct Shoot
@@ -15,6 +21,9 @@ typedef struct Shoot
     SDL_Rect srcRect;     // Rectangle source du shoot
     SDL_Rect dstRect;     // Rectangle destination du shoot
 } Shoot;
+
+static Shoot shoot;
+static Shoot shoots[MAX_SHOOTS];
 
 // Fonction pour charger une texture shoot_texture
 SDL_Texture *LoadTexture(SDL_Renderer *renderer, char *path);

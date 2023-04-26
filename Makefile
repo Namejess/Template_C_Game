@@ -11,18 +11,19 @@ INCDIR  := include
 OBJDIR  := obj
 
 # Files
-SRCS    := $(wildcard $(SRCDIR)/*.c)
-OBJS    := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
+SRCS    := $(wildcard $(SRCDIR)/*.c) $(wildcard *.c)
+OBJS    := $(patsubst %.c,$(OBJDIR)/%.o,$(SRCS))
 DEPS    := $(OBJS:.o=.d)
 EXEC    := Shooter
 
 # Targets
 all: $(EXEC)
 
-$(EXEC): main.o $(OBJS)
+$(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@ -I$(INCDIR)
 
 $(OBJDIR):

@@ -5,10 +5,6 @@
 static SDL_Texture *shoot_texture;
 static SDL_Rect shoot_srcRect;
 static SDL_Rect shoot_dstRect;
-static Shoot shoot;
-static int vxShoot = 10;
-static Shoot shoots[MAX_SHOOTS];
-static int num_shoots = 0;
 
 void shoot_init(SDL_Renderer *renderer)
 {

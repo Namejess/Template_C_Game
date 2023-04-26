@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "SDL2/SDL_image.h"
-#include "src/shoot.c"
+#include "include/shoot.h"
 
 typedef float f32;
 typedef double f64;
@@ -27,6 +27,34 @@ typedef ssize_t isize;
 #define kGameHeight 600
 
 static Shoot shoot;
+static Uint32 last_shoot_time = 0;
+#define SHOOT_DELAY 200
+
+typedef struct
+{
+    int x;
+    int y;
+    int vx;
+    int vy;
+    SDL_Texture *texture;
+} Projectile;
+
+#define MAX_PROJECTILES 1024
+static Projectile projectiles[MAX_PROJECTILES];
+static int num_projectiles = 0;
+
+void add_projectile(int x, int y, int vx, int vy, SDL_Texture *texture)
+{
+    if (num_projectiles < MAX_PROJECTILES)
+    {
+        projectiles[num_projectiles].x = x;
+        projectiles[num_projectiles].y = y;
+        projectiles[num_projectiles].vx = vx;
+        projectiles[num_projectiles].vy = vy;
+        projectiles[num_projectiles].texture = texture;
+        ++num_projectiles;
+    }
+}
 
 SDL_Texture *LoadTexture(SDL_Renderer *renderer, char *path)
 {
@@ -71,6 +99,20 @@ SDL_Texture *LoadTexture2(SDL_Renderer *renderer, char *path)
 }
 
 SDL_Texture *LoadTexture3(SDL_Renderer *renderer, char *path)
+{
+    SDL_Texture *texture = NULL;
+
+    texture = IMG_LoadTexture(renderer, path);
+    if (texture == NULL)
+    {
+        printf("Unable to create texture from %s! SDL Error: %s", path, SDL_GetError());
+        return NULL;
+    }
+
+    return texture;
+}
+
+SDL_Texture *LoadTexture4(SDL_Renderer *renderer, char *path)
 {
     SDL_Texture *texture = NULL;
 
@@ -131,6 +173,9 @@ int main(int argc, char const *argv[])
             return -1;
         }
 
+        /**
+         Charge les textures
+         */
         SDL_Texture *texBG = LoadTexture(renderer, "gfx/background.jpg");
         int iTexBG_w, iTexBG_h;
         SDL_QueryTexture(texBG, NULL, NULL, &iTexBG_w, &iTexBG_h);
@@ -142,6 +187,10 @@ int main(int argc, char const *argv[])
         SDL_Texture *texBG2 = LoadTexture3(renderer, "gfx/background_stars.png");
         int iTexBG2_w, iTexBG2_h;
         SDL_QueryTexture(texBG2, NULL, NULL, &iTexBG2_w, &iTexBG2_h);
+
+        SDL_Texture *texShoot = LoadTexture4(renderer, "gfx/fireball.png");
+        int iTexShoot_w, iTexShoot_h;
+        SDL_QueryTexture(texShoot, NULL, NULL, &iTexShoot_w, &iTexShoot_h);
 
         int x = 0;
         int y = 0;
@@ -175,7 +224,7 @@ int main(int argc, char const *argv[])
             // Update
 
             xBG -= 4;
-            xBG2 -= 25;
+            xBG2 -= 30;
 
             if (xBG2 <= -iTexBG2_w)
             {
@@ -209,40 +258,20 @@ int main(int argc, char const *argv[])
                 x += 5;
             }
 
-            if (state[SDL_SCANCODE_SPACE] && num_shoots < MAX_SHOOTS)
-            {
-                // Add new shoot
-                shoots[num_shoots].x = x + iTexPlanet_w;
-                shoots[num_shoots].y = y + iTexPlanet_h / 2;
-                shoots[num_shoots].vxShoot = 4;
-                shoots[num_shoots].vyShoot = 0;
-                num_shoots++;
-            }
-
-            // Update and draw shoots
-            for (int i = 0; i < num_shoots; i++)
-            {
-                // Update position
-                shoots[i].x += shoots[i].vxShoot;
-                shoots[i].y += shoots[i].vyShoot;
-
-                // Draw shoot
-                shoot_dstRect.x = shoots[i].x;
-                shoot_dstRect.y = shoots[i].y;
-                SDL_RenderCopy(renderer, shoot_texture, &shoot_srcRect, &shoot_dstRect);
-            }
-
-            // Draw
             if (state[SDL_SCANCODE_SPACE])
             {
-                shoot_launch(xShoot, yShoot, vxShoot);
+                Uint32 current_time = SDL_GetTicks();
+                if (current_time - last_shoot_time >= SHOOT_DELAY)
+                {
+                    add_projectile(x + iTexPlanet_w - 25, y + iTexPlanet_h / 2 - 25, 10, 0, texShoot);
+                    last_shoot_time = current_time;
+                }
             }
 
             // Clear the screen
             SDL_RenderClear(renderer);
 
             // Draw a rectangle white
-
             SDL_Rect rectBG = {xBG, 0, iTexBG_w, iTexBG_h};
             SDL_RenderCopy(renderer, texBG, NULL, &rectBG);
             SDL_Rect rectBG2 = {xBG + iTexBG_w, 0, iTexBG_w, iTexBG_h};
@@ -255,6 +284,20 @@ int main(int argc, char const *argv[])
             // Affichage image
             SDL_Rect rect = {x, y, iTexPlanet_w, iTexPlanet_h};
             SDL_RenderCopy(renderer, texPlanet, NULL, &rect);
+
+            // Update projectiles
+            for (int i = 0; i < num_projectiles; ++i)
+            {
+                projectiles[i].x += projectiles[i].vx;
+                projectiles[i].y += projectiles[i].vy;
+            }
+
+            // Draw projectiles
+            for (int i = 0; i < num_projectiles; ++i)
+            {
+                SDL_Rect rectShoot = {projectiles[i].x, projectiles[i].y, iTexShoot_w, iTexShoot_h};
+                SDL_RenderCopy(renderer, projectiles[i].texture, NULL, &rectShoot);
+            }
 
             // Draw the screen
             SDL_RenderPresent(renderer);
