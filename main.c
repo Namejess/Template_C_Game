@@ -28,7 +28,9 @@ typedef ssize_t isize;
 
 static Shoot shoot;
 static Uint32 last_shoot_time = 0;
+static Uint32 last_enemy_time = 0;
 #define SHOOT_DELAY 200
+#define ENEMY_DELAY 500
 
 typedef struct
 {
@@ -39,9 +41,34 @@ typedef struct
     SDL_Texture *texture;
 } Projectile;
 
+typedef struct
+{
+    int x;
+    int y;
+    int vx;
+    int vy;
+    SDL_Texture *texture;
+} Enemy;
+
+static int num_enemy = 0;
+static Enemy enemies[1024];
+
 #define MAX_PROJECTILES 1024
 static Projectile projectiles[MAX_PROJECTILES];
 static int num_projectiles = 0;
+
+void add_enemies(int x, int y, int vx, int vy, SDL_Texture *texture)
+{
+    if (num_enemy < MAX_PROJECTILES)
+    {
+        enemies[num_enemy].x = x;
+        enemies[num_enemy].y = y;
+        enemies[num_enemy].vx = vx;
+        enemies[num_enemy].vy = vy;
+        enemies[num_enemy].texture = texture;
+        ++num_enemy;
+    }
+}
 
 void add_projectile(int x, int y, int vx, int vy, SDL_Texture *texture)
 {
@@ -126,6 +153,23 @@ SDL_Texture *LoadTexture4(SDL_Renderer *renderer, char *path)
     return texture;
 }
 
+SDL_Texture *LoadTexture5(SDL_Renderer *renderer, char *path)
+{
+    SDL_Texture *texture = NULL;
+
+    texture = IMG_LoadTexture(renderer, path);
+    if (texture == NULL)
+    {
+        printf("Unable to create texture from %s! SDL Error: %s", path, SDL_GetError());
+        return NULL;
+    }
+
+    return texture;
+}
+
+// ###################################################
+//  MAIN
+// ##################################################
 int main(int argc, char const *argv[])
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -174,23 +218,32 @@ int main(int argc, char const *argv[])
         }
 
         /**
-         Charge les textures
+        Charge les textures
          */
+        // Charger le sprite background
         SDL_Texture *texBG = LoadTexture(renderer, "gfx/background.jpg");
         int iTexBG_w, iTexBG_h;
         SDL_QueryTexture(texBG, NULL, NULL, &iTexBG_w, &iTexBG_h);
 
+        // Charger le sprite vaisseau joueur
         SDL_Texture *texPlanet = LoadTexture2(renderer, "gfx/ship.png");
         int iTexPlanet_w, iTexPlanet_h;
         SDL_QueryTexture(texPlanet, NULL, NULL, &iTexPlanet_w, &iTexPlanet_h);
 
+        // Charger le sprite background etoiles
         SDL_Texture *texBG2 = LoadTexture3(renderer, "gfx/background_stars.png");
         int iTexBG2_w, iTexBG2_h;
         SDL_QueryTexture(texBG2, NULL, NULL, &iTexBG2_w, &iTexBG2_h);
 
+        // Charger le sprite shot
         SDL_Texture *texShoot = LoadTexture4(renderer, "gfx/fireball.png");
         int iTexShoot_w, iTexShoot_h;
         SDL_QueryTexture(texShoot, NULL, NULL, &iTexShoot_w, &iTexShoot_h);
+
+        // Charger le sprite ennemi
+        SDL_Texture *texEnemy = LoadTexture5(renderer, "gfx/enemy.png");
+        int iTexEnemy_w, iTexEnemy_h;
+        SDL_QueryTexture(texEnemy, NULL, NULL, &iTexEnemy_w, &iTexEnemy_h);
 
         int x = 0;
         int y = 0;
@@ -201,6 +254,11 @@ int main(int argc, char const *argv[])
         i8 yShoot = 0;
         i8 vxShoot = 4;
         i8 vyShoot = 4;
+
+        int xEnemy = kGameWidth - iTexEnemy_w;
+        int yEnemy = 0;
+        i8 vxEnemy = -4;
+        i8 vyEnemy = 4;
 
         int xBG = 0;
         int xBG2 = 0;
@@ -225,6 +283,9 @@ int main(int argc, char const *argv[])
 
             xBG -= 4;
             xBG2 -= 30;
+
+            yEnemy += 4;
+            xEnemy -= 4;
 
             if (xBG2 <= -iTexBG2_w)
             {
@@ -281,9 +342,27 @@ int main(int argc, char const *argv[])
             SDL_Rect rectBG2Stars2 = {xBG2 + iTexBG2_w, 0, iTexBG2_w, iTexBG2_h};
             SDL_RenderCopy(renderer, texBG2, NULL, &rectBG2Stars2);
 
-            // Affichage image
+            // Affichage vaisseau joueur
             SDL_Rect rect = {x, y, iTexPlanet_w, iTexPlanet_h};
             SDL_RenderCopy(renderer, texPlanet, NULL, &rect);
+
+            // Affichage ennemis qui partent du haut droit vers le bas gauche
+            SDL_Rect rectEnemy = {xEnemy, yEnemy, iTexEnemy_w, iTexEnemy_h};
+            SDL_RenderCopy(renderer, texEnemy, NULL, &rectEnemy);
+
+            // current time and enemy delay
+            Uint32 current_time = SDL_GetTicks();
+            if (current_time - last_enemy_time >= ENEMY_DELAY)
+            {
+                last_enemy_time = current_time;
+            }
+
+            // Update enemies
+            for (int i = 0; i < num_enemy; ++i)
+            {
+                enemies[i].x += enemies[i].vx;
+                enemies[i].y += enemies[i].vy;
+            }
 
             // Update projectiles
             for (int i = 0; i < num_projectiles; ++i)
